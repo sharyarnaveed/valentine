@@ -133,8 +133,13 @@ function handleDrop(e) {
   placePiece(draggedEl, cell);
 }
 
-let touchClone  = null;
-let touchPiece  = null;
+let touchClone    = null;
+let touchPiece    = null;
+let touchOffsetX  = 0;
+let touchOffsetY  = 0;
+let touchRAF      = null;
+let latestTouchX  = 0;
+let latestTouchY  = 0;
 
 function handleTouchStart(e) {
   e.preventDefault();
@@ -145,51 +150,103 @@ function handleTouchStart(e) {
   touchPiece.classList.add('dragging');
 
   const rect = touchPiece.getBoundingClientRect();
+
+  // Remember where inside the piece the finger landed
+  touchOffsetX = touch.clientX - rect.left - rect.width / 2;
+  touchOffsetY = touch.clientY - rect.top  - rect.height / 2;
+
   touchClone = touchPiece.cloneNode(true);
   touchClone.classList.remove('dragging');
   Object.assign(touchClone.style, {
     position: 'fixed',
+    left: '0px',
+    top: '0px',
     zIndex: '10000',
     pointerEvents: 'none',
-    opacity: '0.9',
+    opacity: '0.92',
     width: rect.width + 'px',
     height: rect.height + 'px',
     borderColor: 'var(--accent)',
     boxShadow: '0 8px 30px rgba(232, 67, 147, 0.5)',
-    transform: 'scale(1.1)',
+    willChange: 'transform',
     transition: 'none'
   });
-  moveTouchClone(touch, rect.width, rect.height);
+  latestTouchX = touch.clientX;
+  latestTouchY = touch.clientY;
+  positionClone(touch.clientX, touch.clientY, rect.width, rect.height);
   document.body.appendChild(touchClone);
+}
+
+function positionClone(cx, cy, w, h) {
+  // Place clone so it's centered on the adjusted touch, shifted slightly up
+  // so the user's finger doesn't fully cover it
+  const x = cx - touchOffsetX - w / 2;
+  const y = cy - touchOffsetY - h / 2 - 30;
+  touchClone.style.transform = `translate(${x}px, ${y}px) scale(1.08)`;
+}
+
+// The point we use for hit-testing: center of where the clone appears
+function getDropPoint(cx, cy) {
+  return {
+    x: cx - touchOffsetX,
+    y: cy - touchOffsetY - 30   // same offset applied to clone
+  };
 }
 
 function handleTouchMove(e) {
   e.preventDefault();
   e.stopPropagation();
   const touch = e.touches[0];
-  if (touchClone) {
-    const w = touchClone.offsetWidth;
-    const h = touchClone.offsetHeight;
-    moveTouchClone(touch, w, h);
+  latestTouchX = touch.clientX;
+  latestTouchY = touch.clientY;
+
+  // Use rAF to batch DOM updates for smoother dragging
+  if (!touchRAF) {
+    touchRAF = requestAnimationFrame(updateTouchPosition);
   }
+}
+
+function updateTouchPosition() {
+  touchRAF = null;
+  if (!touchClone) return;
+
+  const w = touchClone.offsetWidth;
+  const h = touchClone.offsetHeight;
+  positionClone(latestTouchX, latestTouchY, w, h);
 
   clearHighlights();
-  if (touchClone) touchClone.style.display = 'none';
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  if (touchClone) touchClone.style.display = '';
+  const drop = getDropPoint(latestTouchX, latestTouchY);
+  touchClone.style.display = 'none';
+  const el = document.elementFromPoint(drop.x, drop.y);
+  touchClone.style.display = '';
   const cell = findBoardCell(el);
   if (cell) cell.classList.add('drag-over');
 }
 
 function handleTouchEnd(e) {
   e.preventDefault();
+  if (touchRAF) { cancelAnimationFrame(touchRAF); touchRAF = null; }
   const touch = e.changedTouches[0];
 
+  const drop = getDropPoint(touch.clientX, touch.clientY);
   if (touchClone) touchClone.style.display = 'none';
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  let el = document.elementFromPoint(drop.x, drop.y);
   if (touchClone) touchClone.style.display = '';
 
-  const cell = findBoardCell(el);
+  let cell = findBoardCell(el);
+
+  // If no cell found, try nearby points (helps on small cells)
+  if (!cell) {
+    const offsets = [[-12,0],[12,0],[0,-12],[0,12]];
+    for (const [dx,dy] of offsets) {
+      if (touchClone) touchClone.style.display = 'none';
+      el = document.elementFromPoint(drop.x + dx, drop.y + dy);
+      if (touchClone) touchClone.style.display = '';
+      cell = findBoardCell(el);
+      if (cell) break;
+    }
+  }
+
   if (cell && touchPiece) {
     placePiece(touchPiece, cell);
   }
@@ -206,10 +263,7 @@ function findBoardCell(el) {
   return null;
 }
 
-function moveTouchClone(touch, w, h) {
-  touchClone.style.left = (touch.clientX - w / 2) + 'px';
-  touchClone.style.top  = (touch.clientY - h - 10) + 'px';
-}
+
 
 function placePiece(pieceEl, cell) {
   const pieceIdx = parseInt(pieceEl.dataset.pieceIndex, 10);
