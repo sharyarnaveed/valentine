@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Valentine's Puzzle 💖</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <div class="bg-blobs" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <div id="puzzle-screen" class="screen active">
+    <div class="glass-card puzzle-card">
+      <h1 class="puzzle-title">Piece It Together&nbsp;💕</h1>
+      <p class="puzzle-subtitle">Drag each piece into the grid to reveal the picture</p>
+
+      <div class="stats-bar">
+        <div class="stat">
+          <span class="stat-icon">🧩</span>
+          <span id="move-count">0</span> moves
+        </div>
+        <div class="stat">
+          <span class="stat-icon">⏱️</span>
+          <span id="timer">00:00</span>
+        </div>
+        <div class="stat">
+          <span class="stat-icon">✅</span>
+          <span id="placed-count">0</span>/<span id="total-count">25</span>
+        </div>
+      </div>
+
+      <div class="progress-track">
+        <div id="progress-bar" class="progress-fill"></div>
+      </div>
+
+      <div id="puzzle-board" class="puzzle-board"></div>
+    </div>
+
+    <div class="glass-card tray-card">
+      <p class="tray-label">Available Pieces</p>
+      <div id="pieces-tray" class="pieces-tray"></div>
+    </div>
+  </div>
+
+  <div id="question-screen" class="screen">
+    <div class="glass-card question-card">
+      <h1 class="question-text">Will you be my Valentine?</h1>
+      <span class="question-heart">❤️</span>
+
+      <div class="buttons-wrapper">
+        <button id="yes-btn" class="btn yes-btn">YES 💖</button>
+        <button id="no-btn" class="btn no-btn">NO 💔</button>
+      </div>
+
+      <div id="success-message" class="success-message hidden">
+        <h1>Yayyy! I Love You ❤️</h1>
+        <p class="success-sub">You just made my day!</p>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="fx-canvas"></canvas>
+
+  <script src="script.js"></script>
+</body>
+</html>
